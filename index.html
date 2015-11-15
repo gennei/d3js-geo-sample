@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { background-color:black;}
+</style>
+</head>
+<body>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://d3js.org/topojson.v1.min.js"></script>
+    <script>
+    var width = 1000, height = 1000, scale = 1;
+
+    var svg = d3.select("body")
+              .append("svg")
+              .attr("width", width)
+              .attr("height", height)
+              .attr("id", "geo");
+
+    // 地理座標から画面表示への投影法の設定。
+    var mercator = d3.geo.mercator()
+        .center([136.0,35.6])
+        .translate([width/2, height/2])
+        .scale(1000);
+
+    // geojsonからpath要素を作るための設定。
+    var geopath = d3.geo.path().projection(mercator);
+
+    // topojsonファイルの読み込み
+    d3.json("japan_topo.json", function(error, jp) {
+
+        // topojsonからgeojsonへの変換。
+        var geoJp = topojson.feature(jp, jp.objects.ne_10m_admin_1_states_provinces);
+
+        svg.selectAll("path")
+            .data(geoJp.features) // geojsonのすべての県の座標データを読み込む。
+            .enter().append("path")
+            .attr("class", function(d) { return d.id; })
+            .attr("d", geopath) // geojsonからpath要素に変換する。
+            .attr("fill", function(d){ return "#3cb371"; }); // idがないので、各県の座標リストに基づいて色を変える。
+
+        d3.json("stadium.json", function(data) {
+
+          // 円を描く
+          d3.select("#geo")
+        		.append("g").attr("id","circle-g").selectAll("circle")
+        		.data(data)
+        		.enter()
+        		.append("circle");
+
+          // draw red
+          d3.selectAll("#circle-g circle")
+        		.attr("fill", "red")
+        		.attr("opacity", 1)
+        		.attr("transform", function(d) {
+        			var coord = mercator([d["経度"], d["緯度"]]);
+              console.log(coord);
+        			return "translate(" + coord.join(",") + ")";
+        		})
+        		.attr("r", 5/scale);
+        });
+    });
+
+    </script>
+</body>
+</html>
